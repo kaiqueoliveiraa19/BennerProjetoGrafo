@@ -5,173 +5,166 @@ namespace Rede
 {
     public class Rede
     {
-        private readonly int qtdElementos; // Quantidade de elementos na rede
-        private readonly List<List<int>> conexoes; // Lista de conexões (grafo)
+        private readonly int qtdNo; // Quantidade de nós na rede
+        private readonly List<List<int>> conexoes; // Lista de adjacência do grafo
 
-        //Inicializa a rede com n elementos
-        public Rede(int n)
+        // Inicializa a rede com a quantidade de nós especificada
+        public Rede(int qtdNo)
         {
-            if (n <= 0)
-                throw new ArgumentException("O número de elementos deve ser maior que zero.");
-                
-            qtdElementos = n;
-            
-            conexoes = new List<List<int>>(n);
-            
-            for (int i = 0; i < n; i++)
-                conexoes.Add(new List<int>()); // Cada elemento começa sem conexões
+            if (qtdNo <= 0)
+                throw new ArgumentException("A quantidade de nos deve ser maior que zero.");
+
+            this.qtdNo = qtdNo;
+            conexoes = new List<List<int>>(qtdNo);
+            for (int i = 0; i < qtdNo; i++)
+                conexoes.Add(new List<int>());
         }
 
-        // Conecta dois elementos (adiciona uma ligação entre eles)
-        public void Conectar(int elemento1, int elemento2)
+        // Adiciona uma conexão bidirecional entre dois nós
+        public void Conectar(int no1, int no2)
         {
-            VerificarElementos(elemento1, elemento2);
-            
-            if (elemento1 == elemento2)
-                throw new ArgumentException("Um elemento não pode se conectar a si mesmo.");
-            conexoes[elemento1 - 1].Add(elemento2 - 1); // Adiciona conexão bidirecional
-            conexoes[elemento2 - 1].Add(elemento1 - 1);
+            ValidarNo(no1, no2);
+            if (no1 == no2)
+                throw new ArgumentException("Um no nao pode se conectar a si mesmo.");
+
+            conexoes[no1 - 1].Add(no2 - 1);
+            conexoes[no2 - 1].Add(no1 - 1);
         }
 
-        // Desconecta dois elementos (remove a ligação entre eles)
-        public void Desconectar(int elemento1, int elemento2)
+        // Remove uma conexão bidirecional entre dois nós
+        public void Desconectar(int no1, int no2)
         {
-            VerificarElementos(elemento1, elemento2);
-            
-            conexoes[elemento1 - 1].Remove(elemento2 - 1); // Remove conexão bidirecional
-            conexoes[elemento2 - 1].Remove(elemento1 - 1);
+            ValidarNo(no1, no2);
+            conexoes[no1 - 1].Remove(no2 - 1);
+            conexoes[no2 - 1].Remove(no1 - 1);
         }
 
-        // Verifica se dois elementos estão conectados (direta ou indiretamente)
-        public bool EstaoConectados(int elemento1, int elemento2)
+        // Verifica se dois nós estão conectados (direta ou indiretamente)
+        public bool EstaoConectados(int no1, int no2)
         {
-            VerificarElementos(elemento1, elemento2);
-            
-            if (elemento1 == elemento2)
-                return true; // Mesmo elemento é considerado conectado
+            ValidarNo(no1, no2);
+            if (no1 == no2)
+                return true;
 
-            var visitados = new bool[qtdElementos];
-            return BuscarCaminho(elemento1 - 1, elemento2 - 1, visitados);
+            var visitados = new bool[qtdNo];
+            return BuscaEmProfundidade(no1 - 1, no2 - 1, visitados);
         }
 
-        // Conta quantas conexões (passos) existem no menor caminho entre dois elementos
-        public int QuantidadeConexoes(int elemento1, int elemento2)
+        // Conta o número de conexões no menor caminho entre dois nós
+        public int ContarConexoes(int no1, int no2)
         {
-            VerificarElementos(elemento1, elemento2);
-            
-            if (elemento1 == elemento2)
-                return 0; // Mesmo elemento não tem conexões
+            ValidarNo(no1, no2);
+            if (no1 == no2)
+                return 0;
 
-            var visitados = new bool[qtdElementos];
-            var fila = new Queue<(int elemento, int passos)>();
-            fila.Enqueue((elemento1 - 1, 0));
-            visitados[elemento1 - 1] = true;
+            var visitados = new bool[qtdNo];
+            var fila = new Queue<(int no, int passos)>();
+            fila.Enqueue((no1 - 1, 0)); // Adiciona o nó inicial à fila com 0 passos
+            visitados[no1 - 1] = true;
 
             while (fila.Count > 0)
             {
-                var (atual, passos) = fila.Dequeue();
+                var (atual, passos) = fila.Dequeue(); // Remove o próximo nó da fila
                 foreach (var vizinho in conexoes[atual])
                 {
                     if (!visitados[vizinho])
                     {
-                        if (vizinho == elemento2 - 1)
-                            return passos + 1; // Encontrou o destino
+                        if (vizinho == no2 - 1)
+                            return passos + 1;
                         visitados[vizinho] = true;
-                        fila.Enqueue((vizinho, passos + 1));
+                        fila.Enqueue((vizinho, passos + 1)); // Adiciona o vizinho à fila com passos incrementados
                     }
                 }
             }
-            return 0; // Não há conexão
+            return 0; // Não há caminho
         }
 
-        // Verifica se os elementos são válidos (entre 1 e qtdElementos)
-        private void VerificarElementos(int elemento1, int elemento2)
+        // Valida se os nós estão no intervalo permitido
+        private void ValidarNo(int no1, int no2)
         {
-            if (elemento1 <= 0 || elemento1 > qtdElementos || elemento2 <= 0 || elemento2 > qtdElementos)
-                throw new ArgumentException("Devem estar entre 1 e " + qtdElementos + ".");
+            if (no1 <= 0 || no1 > qtdNo || no2 <= 0 || no2 > qtdNo)
+                throw new ArgumentException($"Os nos devem estar entre 1 e {qtdNo}.");
         }
 
-        // Busca em profundidade para verificar se há caminho entre dois elementos
-        private bool BuscarCaminho(int atual, int destino, bool[] visitados)
+        // Busca em profundidade para encontrar caminho entre dois nós
+        private bool BuscaEmProfundidade(int atual, int destino, bool[] visitados)
         {
             visitados[atual] = true;
             if (atual == destino)
-                return true; // Encontrou o destino
+                return true;
+
             foreach (var vizinho in conexoes[atual])
             {
-                if (!visitados[vizinho] && BuscarCaminho(vizinho, destino, visitados))
+                if (!visitados[vizinho] && BuscaEmProfundidade(vizinho, destino, visitados))
                     return true;
             }
-            return false; // Não encontrou caminho
+            return false;
         }
     }
 
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
             try
             {
-                // Cria uma rede com 8 elementos
-                Rede rede = new Rede(8);
+                // Cria uma rede com 8 nós
+                var rede = new Rede(8);
 
-                // Faz conexões entre elementos
-                rede.Conectar(1, 2); // Conecta 1 a 2
-                rede.Conectar(6, 2); // Conecta 6 a 2
-                rede.Conectar(2, 4); // Conecta 2 a 4
-                rede.Conectar(5, 8); // Conecta 5 a 8
+                // Estabelece conexões
+                rede.Conectar(1, 2);
+                rede.Conectar(6, 2);
+                rede.Conectar(2, 4);
+                rede.Conectar(5, 8);
 
-                // Testa se elementos estão conectados
-                Console.WriteLine($"1 e 6 estão conectados? {rede.EstaoConectados(1, 6)}"); // Sim
-                Console.WriteLine($"6 e 4 estão conectados? {rede.EstaoConectados(6, 4)}"); // Sim
-                Console.WriteLine($"7 e 4 estão conectados? {rede.EstaoConectados(7, 4)}"); // Não
-                Console.WriteLine($"5 e 6 estão conectados? {rede.EstaoConectados(5, 6)}"); // Não
+                // Verifica conexões
+                Console.WriteLine($"1 e 6 estao conectados? {rede.EstaoConectados(1, 6)}"); // True
+                Console.WriteLine($"6 e 4 estao conectados? {rede.EstaoConectados(6, 4)}"); // True
+                Console.WriteLine($"7 e 4 estao conectados? {rede.EstaoConectados(7, 4)}"); // False
+                Console.WriteLine($"5 e 6 estao conectados? {rede.EstaoConectados(5, 6)}"); // False
 
-                // Testa quantidade de conexões
-                Console.WriteLine($"Passos entre 1 e 6: {rede.QuantidadeConexoes(1, 6)}"); // 1
-                Console.WriteLine($"Passos entre 6 e 4: {rede.QuantidadeConexoes(6, 4)}"); // 1
-                Console.WriteLine($"Passos entre 1 e 4: {rede.QuantidadeConexoes(1, 4)}"); // 2
-                Console.WriteLine($"Passos entre 7 e 4: {rede.QuantidadeConexoes(7, 4)}"); // 0
-                Console.WriteLine($"Passos entre 5 e 6: {rede.QuantidadeConexoes(5, 6)}"); // 0
+                // Conta passos no menor caminho
+                Console.WriteLine($"Passos entre 1 e 6: {rede.ContarConexoes(1, 6)}"); // 1
+                Console.WriteLine($"Passos entre 6 e 4: {rede.ContarConexoes(6, 4)}"); // 1
+                Console.WriteLine($"Passos entre 1 e 4: {rede.ContarConexoes(1, 4)}"); // 2
+                Console.WriteLine($"Passos entre 7 e 4: {rede.ContarConexoes(7, 4)}"); // 0
+                Console.WriteLine($"Passos entre 5 e 6: {rede.ContarConexoes(5, 6)}"); // 0
 
                 // Testa desconexão
-                rede.Desconectar(1, 2); // Remove conexão entre 1 e 2
-                Console.WriteLine($"Após desconectar 1 e 2, 1 e 6 estão conectados? {rede.EstaoConectados(1, 6)}"); // Não
+                rede.Desconectar(1, 2);
+                Console.WriteLine($"Apos desconectar 1 e 2, 1 e 6 estao conectados? {rede.EstaoConectados(1, 6)}"); // False
 
-                // Testa erros
+                // Testa casos de erro
                 try
                 {
-                    rede.Conectar(0, 1); // Erro: elemento inválido
-                    Console.WriteLine("Não passa aqui!");
+                    rede.Conectar(0, 1); // Nó inválido
                 }
-                catch (ArgumentException erro)
+                catch (ArgumentException e)
                 {
-                    Console.WriteLine($"Erro {erro.Message}");
-                }
-
-                try
-                {
-                    rede.Conectar(1, 1); // Erro: conectar elemento a si mesmo
-                    Console.WriteLine("Não passa aqui!");
-                }
-                catch (ArgumentException erro)
-                {
-                    Console.WriteLine($"Erro: {erro.Message}");
+                    Console.WriteLine($"Erro: {e.Message}");
                 }
 
                 try
                 {
-                    rede = new Rede(0); // Erro: tamanho inválido
-                    Console.WriteLine("Tamanho invalido ! Não passa aqui!");
+                    rede.Conectar(1, 1); // Auto-conexão
                 }
-                catch (ArgumentException erro)
+                catch (ArgumentException e)
                 {
-                    Console.WriteLine($"Erro: {erro.Message}");
+                    Console.WriteLine($"Erro: {e.Message}");
+                }
+
+                try
+                {
+                    var redeInvalida = new Rede(0); // Tamanho inválido
+                }
+                catch (ArgumentException e)
+                {
+                    Console.WriteLine($"Erro: {e.Message}");
                 }
             }
-            catch (Exception erro)
+            catch (Exception e)
             {
-                Console.WriteLine($"Erro: {erro.Message}");
+                Console.WriteLine($"Erro: {e.Message}");
             }
         }
     }
