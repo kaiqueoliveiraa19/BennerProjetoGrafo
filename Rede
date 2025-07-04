@@ -49,6 +49,7 @@ namespace Rede
             
             if (elemento1 == elemento2)
                 return true; // Mesmo elemento é considerado conectado
+
             var visitados = new bool[qtdElementos];
             return BuscarCaminho(elemento1 - 1, elemento2 - 1, visitados);
         }
@@ -60,6 +61,7 @@ namespace Rede
             
             if (elemento1 == elemento2)
                 return 0; // Mesmo elemento não tem conexões
+
             var visitados = new bool[qtdElementos];
             var fila = new Queue<(int elemento, int passos)>();
             fila.Enqueue((elemento1 - 1, 0));
