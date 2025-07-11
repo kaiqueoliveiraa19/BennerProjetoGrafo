@@ -1,0 +1,224 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace ProjetoBenner2025
+{
+    #region Utilitários
+    public class GrafoUtil
+    {
+        public GrafoUtil() { }
+
+        public void ImprimirMensagem(string mensagem)
+        {
+            Console.WriteLine(mensagem);
+        }
+
+        public void IniciarAplicacao()
+        {
+            Console.ReadLine();
+        }
+    }
+    #endregion
+
+    #region Lógica
+    public class Grafo
+    {
+        #region Propriedades
+        private uint quantidadeDeNos;
+        private List<int>[] conexoesEntreNos = null;
+        #endregion
+        #region Construtor e Inicialização
+        public Grafo(uint numero)
+        {
+            ValidarNumeroMaiorQueZero(numero);
+            InicializarVariaveisGrafo(numero);
+            AdicionarConexaoEntreVertices(numero);
+        }
+        public void ValidarNumeroMaiorQueZero(uint numero)
+        {
+            if (numero == 0)
+            {
+                throw new ArgumentException("Número de elementos deve ser maior que zero.");
+            }
+        }
+        public void AdicionarConexaoEntreVertices(uint numero)
+        {
+            for (int i = 0; i < numero; i++)
+            {
+                conexoesEntreNos[i] = new List<int>();
+            }
+
+            AtribuirNumeroConexoes(conexoesEntreNos);
+        }
+        public void InicializarVariaveisGrafo(uint numero)
+        {
+            quantidadeDeNos = numero;
+            conexoesEntreNos = new List<int>[numero];
+        }
+        public void AtribuirNumeroConexoes(List<int>[] ligacoes)
+        {
+            //Fiz outras ligações para entender a lógica
+            ligacoes[0].Add(1);
+            ligacoes[0].Add(2);
+            ligacoes[1].Add(4);
+            ligacoes[1].Add(5);
+            ligacoes[2].Add(6);
+            ligacoes[2].Add(3);
+            ligacoes[3].Add(7);
+        }
+        #endregion
+        #region Verificação de Conexões
+        public string VerificaConexao(int numero1, int numero2)
+        {
+            try
+            {
+                VerificarIndicesValidos(numero1, numero2);
+                if (BuscarConexao(numero1, numero2).Contains("Sim"))
+                {
+                    return "Número " + numero1 + " está conectado com o número " + numero2 + "\n";
+                }
+                else
+                {
+                    return "Número " + numero1 + " não está conectado com o número " + numero2 + "\n";
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                return ex.Message;
+            }
+        }
+        #endregion
+        #region Busca de Conexões
+        public string Consultar(int numero1, int numero2)
+        {
+            VerificarIndicesValidos(numero1, numero2);
+            numero1--;
+            numero2--;
+            if (conexoesEntreNos[numero1].Contains(numero2 + 1))
+            {
+                return $"Número {numero1 + 1} está conectado diretamente com o número {numero2 + 1}?" + " Sim \n";
+            }
+            else if (BuscarConexao(numero1 + 1, numero2 + 1).Contains("Sim"))
+            {
+                return $"Número {numero1 + 1} está conectado indiretamente com o número {numero2 + 1}?" + " Sim \n";
+            }
+            return $"Número {numero1 + 1} está conectado com o número {numero2 + 1}?" + " Não \n";
+        }
+        private string BuscarConexao(int numero1, int numero2)
+        {
+            int originalNr1 = numero1;
+            int originalNr2 = numero2;
+            var nosPercorridos = new bool[quantidadeDeNos];
+            var filaDeNos = new Stack<int>();
+            numero1--;
+            filaDeNos.Push(numero1);
+            nosPercorridos[numero1] = true;
+
+            while (filaDeNos.Count > 0)//DFS (aqui daria para usar a)
+            {
+                var atual = filaDeNos.Pop();
+                if (ConexaoEncontrada(atual, numero2))
+                {
+                    return $"Número {originalNr1} está conectado com o número {originalNr2}?" + " Sim \n";
+                }
+                AdicionarVizinhosNaFila(filaDeNos, nosPercorridos, atual);
+            }
+            return $"Número {originalNr1} está conectado com o número {originalNr2}?" + " Não \n";
+        }
+
+        private bool ConexaoEncontrada(int atual, int numero2)
+        {
+            return atual == numero2 - 1;
+        }
+
+        private void AdicionarVizinhosNaFila(Stack<int> filaDeNos, bool[] verticesVisitados, int verticeAtual)
+        {
+            foreach (var vertice in conexoesEntreNos[verticeAtual])
+            {
+                if (!verticesVisitados[vertice])
+                {
+                    MarcarEAdicionar(vertice, verticesVisitados, filaDeNos);
+                }
+            }
+        }
+        private void MarcarEAdicionar(int vertice, bool[] verticesVisitados, Stack<int> filaDeNos)
+        {
+            verticesVisitados[vertice] = true;
+            filaDeNos.Push(vertice);//adicionar vertice novo na pilha
+        }
+        #endregion
+        #region Validação de Índices
+        public void VerificarIndicesValidos(int numero1, int numero2)
+        {
+            if (numero1 <= 0 || numero1 > quantidadeDeNos)
+            {
+                throw new ArgumentException($"O número {numero1} está fora do limite de conexões válidas (1 a {quantidadeDeNos}).");
+            }
+            if (numero2 <= 0 || numero2 > quantidadeDeNos)
+            {
+                throw new ArgumentException($"O número {numero2} está fora do limite de conexões válidas (1 a {quantidadeDeNos}).");
+            }
+        }
+        #endregion
+        #region Impressão de Resultados
+        public void ImprimirConexoes(GrafoUtil util)
+        {
+            util.ImprimirMensagem("*Iniciado grafo com " + quantidadeDeNos + " nós**");
+            util.ImprimirMensagem("*****************************");
+            util.ImprimirMensagem("Testes se estão ligados");
+            util.ImprimirMensagem("*****************************");
+            util.ImprimirMensagem(VerificaConexao(3, 2));
+            util.ImprimirMensagem(VerificaConexao(1, 5));
+            util.ImprimirMensagem(VerificaConexao(5, 8));
+            util.ImprimirMensagem(VerificaConexao(1, 2));
+            util.ImprimirMensagem(VerificaConexao(7, 3));
+            util.ImprimirMensagem("*****************************");
+            util.ImprimirMensagem("Testes de conexão:");
+            util.ImprimirMensagem("*****************************");
+            util.ImprimirMensagem(Consultar(1, 6));
+            util.ImprimirMensagem(Consultar(6, 4));
+            util.ImprimirMensagem(Consultar(7, 4));
+            util.ImprimirMensagem(Consultar(5, 6));
+            util.ImprimirMensagem(Consultar(6, 1));
+            util.ImprimirMensagem(Consultar(6, 2));
+            util.ImprimirMensagem(Consultar(1, 7));
+            util.ImprimirMensagem(Consultar(0, 8));
+            #endregion
+        }
+        #endregion
+        #region Iniciar a aplicação
+        class Program
+        {
+            static void Main(string[] args)
+            {
+                GrafoUtil util = new GrafoUtil();
+                try
+                {
+                    Grafo grafo = new Grafo(8);
+
+                    if (grafo != null)
+                    {
+                        grafo.ImprimirConexoes(util);
+                    }
+                    else
+                    {
+                        util.ImprimirMensagem("Grafo não foi instanciado corretamente.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    util.ImprimirMensagem("*****************************");
+                    util.ImprimirMensagem($"Erro: {ex.Message}");
+                    util.ImprimirMensagem("*****************************");
+                    util.ImprimirMensagem(ex.StackTrace);
+                }
+                finally
+                {
+                    util.IniciarAplicacao();
+                }
+            }
+        }
+    }
+}
+#endregion
